@@ -129,6 +129,9 @@ func _pointer(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) 
 	if v.Kind() != Ptr {
 		return nil, fmt.Errorf("must pass a value with kind of Ptr; got %v", v.Kind())
 	}
+	if v.IsNil() {
+		return nil, nil
+	}
 	addr := v.Pointer()
 	if dc, ok := ptrs[addr]; ok {
 		return dc, nil
@@ -165,7 +168,9 @@ func _struct(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy the field %v in the struct %#v: %v", t.Field(i).Name, x, err)
 		}
-		dc.Elem().Field(i).Set(ValueOf(item))
+		if item != nil {
+			dc.Elem().Field(i).Set(ValueOf(item))
+		}
 	}
 	return dc.Elem().Interface(), nil
 }

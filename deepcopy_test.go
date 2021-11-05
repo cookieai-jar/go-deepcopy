@@ -57,10 +57,10 @@ func ExampleMap() {
 	}
 	// Output:
 	// x["foo"] = y["foo"]: false
-	// x["foo"].Foo = y["foo"].Foo: false
+	// x["foo"].Foo = y["foo"].Foo: true
 	// x["foo"].Bar = y["foo"].Bar: true
 	// x["bar"] = y["bar"]: false
-	// x["bar"].Foo = y["bar"].Foo: false
+	// x["bar"].Foo = y["bar"].Foo: true
 	// x["bar"].Bar = y["bar"].Bar: true
 }
 
@@ -150,5 +150,26 @@ func TestMismatchedTypesFail(t *testing.T) {
 				t.Errorf("%v attempted value %v as %v; should have gotten an error", test.kind, test.input, kind)
 			}
 		}
+	}
+}
+
+func TestCopyNilValue(t *testing.T) {
+	type Bar struct {
+		Baz string
+	}
+	type Foo struct {
+		Bar *Bar
+	}
+
+	s := &Foo{
+		Bar: nil,
+	}
+	c, err := Anything(s)
+	if err != nil {
+		t.Fatalf("deepcopy of struct %#v failed", s)
+	}
+
+	if !DeepEqual(s, c) {
+		t.Fatalf("original and copied struct are not equal: %+v != %+v", s, c)
 	}
 }

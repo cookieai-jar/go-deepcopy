@@ -1,3 +1,3 @@
-module github.com/cookieai-jar/go-deepcopy
+module github.com/barkimedes/go-deepcopy
 
 go 1.22

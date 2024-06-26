@@ -3,13 +3,16 @@ package deepcopy
 import (
 	"fmt"
 	. "reflect"
+	"time"
 )
 
 type copier func(interface{}, map[uintptr]interface{}) (interface{}, error)
 
 var copiers map[Kind]copier
+var typeCopiers map[Type]copier
 
 func init() {
+
 	copiers = map[Kind]copier{
 		Bool:       _primitive,
 		Int:        _primitive,
@@ -34,6 +37,10 @@ func init() {
 		String:     _primitive,
 		Struct:     _struct,
 	}
+
+	typeCopiers = map[Type]copier{
+		TypeOf(time.Time{}): _time,
+	}
 }
 
 // MustAnything does a deep copy and panics on any errors.
@@ -55,6 +62,16 @@ func _primitive(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error
 	return x, nil
 }
 
+func _time(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
+	kind := ValueOf(x).Kind()
+	if kind != TypeOf(time.Time{}).Kind() {
+		return nil, fmt.Errorf("unable to copy %v (a %v) as a time.Time", x, kind)
+	}
+	var t time.Time
+	t = x.(time.Time)
+	return t, nil
+}
+
 // Anything makes a deep copy of whatever gets passed in. It handles pretty much all known Go types
 // (with the exception of channels, unsafe pointers, and functions). Note that this is a truly deep
 // copy that will work it's way all the way to the leaves of the types--any pointer will be copied,
@@ -73,10 +90,15 @@ func _anything(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error)
 	if !v.IsValid() {
 		return x, nil
 	}
-	if c, ok := copiers[v.Kind()]; ok {
+	// First check for 'custom' types that we know how to handle.
+	t := TypeOf(x)
+	if c, ok := typeCopiers[t]; ok {
 		return c(x, ptrs)
 	}
-	t := TypeOf(x)
+	k := v.Kind()
+	if c, ok := copiers[k]; ok {
+		return c(x, ptrs)
+	}
 	return nil, fmt.Errorf("unable to make a deep copy of %v (type: %v) - kind %v is not supported", x, t, v.Kind())
 }
 
@@ -193,4 +215,8 @@ func _array(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
 		dc.Index(i).Set(ValueOf(item))
 	}
 	return dc.Interface(), nil
+}
+
+func AddTypeCopier(t Type, c copier) {
+	typeCopiers[t] = c
 }

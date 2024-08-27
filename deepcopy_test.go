@@ -174,6 +174,40 @@ func TestCopyNilValue(t *testing.T) {
 	}
 }
 
+func TestCustomTypeCopier(t *testing.T) {
+	type StringArray []string
+
+	var nilArray StringArray = nil
+	nilArrayCopy, err := Anything(nilArray)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", nilArray)
+	}
+
+	if nilArrayCopy != nil {
+		t.Errorf("expect %v to be nil ", nilArrayCopy)
+	}
+
+	var emptyArray = StringArray{}
+	emptyArrayCopy, err := Anything(emptyArray)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", emptyArray)
+	}
+
+	if !DeepEqual(emptyArray, emptyArrayCopy) {
+		t.Errorf("expect %v == %v; ", emptyArray, emptyArrayCopy)
+	}
+
+	var array = StringArray{"one", "two", "three"}
+	arrayCopy, err := Anything(array)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", array)
+	}
+
+	if !DeepEqual(array, arrayCopy) {
+		t.Errorf("expect %v == %v; ", emptyArray, emptyArrayCopy)
+	}
+}
+
 func TestTimeType(t *testing.T) {
 	src := time.Date(2016, 1, 1, 1, 0, 0, 0, time.UTC)
 	dst, err := Anything(src)
@@ -187,7 +221,6 @@ func TestTimeType(t *testing.T) {
 	if !DeepEqual(src, dst) {
 		t.Errorf("expect %v == %v; ", src, dst)
 	}
-
 }
 
 func TestTimePtrType(t *testing.T) {

@@ -38,9 +38,12 @@ func init() {
 		Struct:     _struct,
 	}
 
-	typeCopiers = map[Type]copier{
-		TypeOf(time.Time{}): _time,
-	}
+	typeCopiers = map[Type]copier{}
+	RegisterTypeCopier(TypeOf(time.Time{}), _time)
+}
+
+func RegisterTypeCopier(t Type, c copier) {
+	typeCopiers[t] = c
 }
 
 // MustAnything does a deep copy and panics on any errors.

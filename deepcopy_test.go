@@ -174,6 +174,68 @@ func TestCopyNilValue(t *testing.T) {
 	}
 }
 
+func TestCustomTypeCopier(t *testing.T) {
+	type StringArray []string
+	var testCopier = func(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
+		kind := ValueOf(x).Kind()
+		if kind != TypeOf(StringArray{}).Kind() {
+			return nil, fmt.Errorf("unable to copy %v (a %v) as a StringArray", x, kind)
+		}
+		v := ValueOf(x)
+		// If slice is nil, return nil. This is different than the _slice copier would do
+		if v.IsNil() {
+			return nil, nil
+		}
+		// Create a new slice and, for each item in the slice, make a deep copy of it.
+		size := v.Len()
+		t := TypeOf(x)
+		dc := MakeSlice(t, size, size)
+		for i := 0; i < size; i++ {
+			item, err := Anything(v.Index(i).Interface())
+			if err != nil {
+				return nil, fmt.Errorf("failed to clone slice item at index %v: %v", i, err)
+			}
+			iv := ValueOf(item)
+			if iv.IsValid() {
+				dc.Index(i).Set(iv)
+			}
+		}
+		return dc.Interface(), nil
+	}
+
+	RegisterTypeCopier(TypeOf(StringArray{}), testCopier)
+
+	var nilArray StringArray = nil
+	nilArrayCopy, err := Anything(nilArray)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", nilArray)
+	}
+
+	if nilArrayCopy != nil {
+		t.Errorf("expect %v to be nil ", nilArrayCopy)
+	}
+
+	var emptyArray = StringArray{}
+	emptyArrayCopy, err := Anything(emptyArray)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", emptyArray)
+	}
+
+	if !DeepEqual(emptyArray, emptyArrayCopy) {
+		t.Errorf("expect %v == %v; ", emptyArray, emptyArrayCopy)
+	}
+
+	var array = StringArray{"one", "two", "three"}
+	arrayCopy, err := Anything(array)
+	if err != nil {
+		t.Fatalf("deepcopy of StringArray %#v failed", array)
+	}
+
+	if !DeepEqual(array, arrayCopy) {
+		t.Errorf("expect %v == %v; ", emptyArray, emptyArrayCopy)
+	}
+}
+
 func TestTimeType(t *testing.T) {
 	src := time.Date(2016, 1, 1, 1, 0, 0, 0, time.UTC)
 	dst, err := Anything(src)
@@ -187,7 +249,6 @@ func TestTimeType(t *testing.T) {
 	if !DeepEqual(src, dst) {
 		t.Errorf("expect %v == %v; ", src, dst)
 	}
-
 }
 
 func TestTimePtrType(t *testing.T) {

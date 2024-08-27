@@ -107,6 +107,9 @@ func _slice(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
 	if v.Kind() != Slice {
 		return nil, fmt.Errorf("must pass a value with kind of Slice; got %v", v.Kind())
 	}
+	if v.IsNil() {
+		return nil, nil
+	}
 	// Create a new slice and, for each item in the slice, make a deep copy of it.
 	size := v.Len()
 	t := TypeOf(x)

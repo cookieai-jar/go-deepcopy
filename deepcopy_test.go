@@ -247,3 +247,14 @@ func TestTimePtrType(t *testing.T) {
 		t.Errorf("expect %v == %v; ", src, dst)
 	}
 }
+
+func TestNilMap(t *testing.T) {
+	var m map[string]string
+	dst, err := Anything(m)
+	if err != nil {
+		t.Errorf("expected no error; got %v", err)
+	}
+	if dst != nil {
+		t.Errorf("expected nil; got %v", dst)
+	}
+}

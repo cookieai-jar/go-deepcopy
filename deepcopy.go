@@ -132,6 +132,9 @@ func _map(x interface{}, ptrs map[uintptr]interface{}) (interface{}, error) {
 	if v.Kind() != Map {
 		return nil, fmt.Errorf("must pass a value with kind of Map; got %v", v.Kind())
 	}
+	if v.IsNil() {
+		return nil, nil
+	}
 	t := TypeOf(x)
 	dc := MakeMapWithSize(t, v.Len())
 	iter := v.MapRange()
